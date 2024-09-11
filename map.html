@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Locations Map</title>
+    <style>
+        #map {
+            height: 800px;
+            width: 1200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Location Markers from Firebase</h1>
+
+<!-- Filter Options -->
+    <div class="filter-container">
+        <label for="dateFilter">Select Date: </label>
+        <input type="date" id="dateFilter" />
+        <button onclick="applyDateFilter()">Filter</button>
+        <button onclick="clearDateFilter()">Clear Filter</button>
+        <button onclick="goToMostRecentMarker()">Go to Most Recent Marker</button>
+    </div>
+    <br>
+    <div id="map"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+
+    <script>
+        // Your Firebase project configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyBRCuwPYxvCDDPMZz2H4dRKGqAI2AAM5og",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "https://bonipitre-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bonipitre",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "1:30332491258:android:6c09befab6dbde3d2ac043"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Google Map
+        let map;
+        let markers = {};  // Dictionary to store markers with their locationId as the key
+        let allMarkersData = {};  // Store all marker data for filtering
+        let mostRecentMarker = null;  // Track the most recent marker
+        let infoWindow;  // Declare the infoWindow globally
+
+        function initMap() {
+            const defaultCenter = { lat: 43.6045, lng: 1.444 }; // Default center (Toulouse)
+
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 8,
+                center: defaultCenter,
+            });
+
+             // Initialize the infoWindow
+            infoWindow = new google.maps.InfoWindow();  // Create a single infoWindow instance
+
+           // Load existing markers and listen for new ones
+            loadMarkersFromFirebase();
+            
+            
+        }
+
+        // Load all markers from Firebase, sorted by locationId (date prefix), and add new markers dynamically
+        function loadMarkersFromFirebase() {
+            const database = firebase.database().ref("locations");
+
+            // Listen for all existing and new locations
+            database.on("child_added", function(snapshot) {
+                const locationData = snapshot.val();
+                const lat = locationData.latitude;
+                const lng = locationData.longitude;
+                const locationId = snapshot.key;  // Use the unique key for this location
+
+                // Store the marker data for future filtering
+                allMarkersData[locationId] = { lat, lng };
+
+                // Add marker to the map
+                (lat, lng, locationId);
+                
+                // Update the most recent marker
+                updateMostRecentMarker(lat, lng, locationId);
+                
+                clearDateFilter();
+                
+            });
+
+            // Listen for updates to existing locations
+            database.on("child_changed", function(snapshot) {
+                const locationData = snapshot.val();
+                const lat = locationData.latitude;
+                const lng = locationData.longitude;
+                const locationId = snapshot.key;
+
+                // Mettre à jour les données stockées
+                allMarkersData[locationId] = { lat, lng };
+
+                // Supprimer l'ancien marqueur et ajouter le nouveau
+                removeMarker(locationId);
+                addMarker(lat, lng, locationId);
+
+                // Réappliquer le filtre si une date est sélectionnée
+                const selectedDate = document.getElementById('dateFilter').value;
+                if (selectedDate) {
+                    applyDateFilter();  // Appliquer le filtre
+                }
+            });
+
+            // Listen for removed locations
+            database.on("child_removed", function(snapshot) {
+                const locationId = snapshot.key;  // Get the locationId (Firebase key)
+
+                // Remove the marker from the map if it exists
+                if (markers[locationId]) {
+                    removeMarker(locationId);
+                }
+            });
+        }
+
+// Function to add marker to the map with a sailing boat icon
+        function addMarker(lat, lng, locationId) {
+            const markerPosition = { lat: lat, lng: lng };
+            const marker = new google.maps.Marker({
+                position: markerPosition,
+                map: map,
+                icon: {
+                    url: 'https://bonipitre.fr/wp-content/uploads/2024/09/markerboat.png',  // Sailing boat icon
+                    scaledSize: new google.maps.Size(40, 40)  // Resize the icon
+                }
+            });
+
+            // Add click listener to display the date and time when the marker is clicked
+            marker.addListener('click', function() {
+                const date = locationId.split('_')[0];  // Extract date from locationId
+                const timestamp = locationId.split('_')[2];  // Extract timestamp from locationId
+
+                // Convert the timestamp into a readable time format
+                const time = new Date(parseInt(timestamp)).toLocaleTimeString();  // Extract time (HH:MM:SS)
+
+                infoWindow.setContent(`<div>
+                    <p><strong>Date:</strong> ${date}</p>
+                    <p><strong>Time:</strong> ${time}</p>
+                </div>`);
+                infoWindow.open(map, marker);
+            });
+
+            marker.addListener('mouseout', function() {
+                infoWindow.close();  // Close the infoWindow when mouse moves out
+            });
+            
+            // Store the marker in the markers dictionary with locationId as the key
+            markers[locationId] = marker;
+        }
+
+        // Function to update an existing marker's position
+        function updateMarker(lat, lng, locationId) {
+            const marker = markers[locationId];
+            const newPosition = { lat: lat, lng: lng };
+            
+            // Update marker's position
+            marker.setPosition(new google.maps.LatLng(newPosition));
+
+            console.log(`Marker for ${locationId} updated to new position: (${lat}, ${lng})`);
+        }
+
+        // Function to remove marker from the map
+        function removeMarker(locationId) {
+            const marker = markers[locationId];
+
+            // Remove the marker from the map
+            marker.setMap(null);
+
+            // Remove the marker from the markers dictionary
+            delete markers[locationId];
+
+            console.log(`Marker for ${locationId} removed from the map.`);
+        }
+// Function to apply the date filter and show only the markers for the selected date
+        function applyDateFilter() {
+            const selectedDate = document.getElementById('dateFilter').value;  // Get the selected date from the input
+
+            if (!selectedDate) {
+                alert('Please select a valid date.');
+                return;
+            }
+
+            // Supprimer tous les marqueurs
+            for (let locationId in markers) {
+                removeMarker(locationId);
+            }
+
+            // Filter markers based on the selected date
+            for (let locationId in allMarkersData) {
+                const date = locationId.split('_')[0];  // Extract the date from the locationId
+                if (date === selectedDate) {
+                    const lat = allMarkersData[locationId].lat;
+                    const lng = allMarkersData[locationId].lng;
+                    addMarker(lat, lng, locationId);  // Add marker to the map for the selected date
+                }
+            }
+        }
+
+        // Function to clear the date filter and show all markers again
+        function clearDateFilter() {
+            document.getElementById('dateFilter').value = '';  // Clear the date input
+            for (let locationId in markers) {
+                removeMarker(locationId);
+            }
+
+            // Show all markers again
+            for (let locationId in allMarkersData) {
+                const lat = allMarkersData[locationId].lat;
+                const lng = allMarkersData[locationId].lng;
+                addMarker(lat, lng, locationId);
+            }
+        }        
+
+        // Function to update the most recent marker based on the timestamp in locationId
+        function updateMostRecentMarker(lat, lng, locationId) {
+            if (!mostRecentMarker) {
+                mostRecentMarker = { lat, lng, locationId };
+            } else {
+                const currentMostRecentTimestamp = parseInt(mostRecentMarker.locationId.split('_')[2]);
+                const newTimestamp = parseInt(locationId.split('_')[2]);
+                if (newTimestamp > currentMostRecentTimestamp) {
+                    mostRecentMarker = { lat, lng, locationId };  // Update the most recent marker
+                }
+            }
+        }
+
+        // Function to go to the most recent marker
+        function goToMostRecentMarker() {
+            if (mostRecentMarker) {
+                const position = new google.maps.LatLng(mostRecentMarker.lat, mostRecentMarker.lng);
+                map.setCenter(position);  // Center the map on the most recent marker
+                map.setZoom(15);  // Optionally zoom in
+                //alert(`Centered on the most recent marker: ${mostRecentMarker.locationId}`);
+            } else {
+                //alert('No markers found.');
+            }
+        }
+
+
+
+  </script>
+
+    <!-- Google Maps API -->
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRCuwPYxvCDDPMZz2H4dRKGqAI2AAM5og&callback=initMap">
+    </script>
+</body>
+</html>
+
+
+
+
