@@ -76,16 +76,15 @@
                 const locationData = snapshot.val();
                 const lat = locationData.latitude;
                 const lng = locationData.longitude;
+                const speed = locationData.speed;
+                const timestamp = locationData.timestamp;
                 const locationId = snapshot.key;  // Use the unique key for this location
 
                 // Store the marker data for future filtering
-                allMarkersData[locationId] = { lat, lng };
-
-                // Add marker to the map
-                (lat, lng, locationId);
+                allMarkersData[locationId] = { lat, lng, speed };
                 
                 // Update the most recent marker
-                updateMostRecentMarker(lat, lng, locationId);
+                updateMostRecentMarker(lat, lng, timestamp);
                 
                 clearDateFilter();
                 
@@ -96,6 +95,7 @@
                 const locationData = snapshot.val();
                 const lat = locationData.latitude;
                 const lng = locationData.longitude;
+                const speed = locationData.speed;
                 const locationId = snapshot.key;
 
                 // Mettre à jour les données stockées
@@ -103,7 +103,7 @@
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
-                addMarker(lat, lng, locationId);
+                addMarker(lat, lng, locationId, speed);
 
                 // Réappliquer le filtre si une date est sélectionnée
                 const selectedDate = document.getElementById('dateFilter').value;
@@ -124,7 +124,7 @@
         }
 
 // Function to add marker to the map with a sailing boat icon
-        function addMarker(lat, lng, locationId) {
+        function addMarker(lat, lng, locationId, speed) {
             const markerPosition = { lat: lat, lng: lng };
             const marker = new google.maps.Marker({
                 position: markerPosition,
@@ -138,14 +138,12 @@
             // Add click listener to display the date and time when the marker is clicked
             marker.addListener('click', function() {
                 const date = locationId.split('_')[0];  // Extract date from locationId
-                const timestamp = locationId.split('_')[2];  // Extract timestamp from locationId
-
-                // Convert the timestamp into a readable time format
-                const time = new Date(parseInt(timestamp)).toLocaleTimeString();  // Extract time (HH:MM:SS)
-
+                const time = locationId.split('_')[1];  // Extract time from locationId
+      
                 infoWindow.setContent(`<div>
                     <p><strong>Date:</strong> ${date}</p>
                     <p><strong>Time:</strong> ${time}</p>
+                    <p><strong>Sped:</strong> ${speed} km/h</p>
                 </div>`);
                 infoWindow.open(map, marker);
             });
@@ -201,7 +199,8 @@
                 if (date === selectedDate) {
                     const lat = allMarkersData[locationId].lat;
                     const lng = allMarkersData[locationId].lng;
-                    addMarker(lat, lng, locationId);  // Add marker to the map for the selected date
+                    const speed = allMarkersData[locationId].speed;
+                    addMarker(lat, lng, locationId, speed);  // Add marker to the map for the selected date
                 }
             }
         }
@@ -217,19 +216,20 @@
             for (let locationId in allMarkersData) {
                 const lat = allMarkersData[locationId].lat;
                 const lng = allMarkersData[locationId].lng;
-                addMarker(lat, lng, locationId);
+                const speed = allMarkersData[locationId].speed;
+                addMarker(lat, lng, locationId, speed);
             }
         }        
 
         // Function to update the most recent marker based on the timestamp in locationId
-        function updateMostRecentMarker(lat, lng, locationId) {
+        function updateMostRecentMarker(lat, lng, timestamp) {
             if (!mostRecentMarker) {
-                mostRecentMarker = { lat, lng, locationId };
+                mostRecentMarker = { lat, lng, timestamp };
             } else {
-                const currentMostRecentTimestamp = parseInt(mostRecentMarker.locationId.split('_')[2]);
-                const newTimestamp = parseInt(locationId.split('_')[2]);
+                const currentMostRecentTimestamp = parseInt(mostRecentMarker.timestamp);
+                const newTimestamp = parseInt(timestamp);
                 if (newTimestamp > currentMostRecentTimestamp) {
-                    mostRecentMarker = { lat, lng, locationId };  // Update the most recent marker
+                    mostRecentMarker = { lat, lng, timestamp };  // Update the most recent marker
                 }
             }
         }
