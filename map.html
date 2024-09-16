@@ -113,7 +113,7 @@
                 const locationId = snapshot.key;
 
                 // Mettre à jour les données stockées
-                allMarkersData[locationId] = { lat, lng, speed };
+                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure };
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
