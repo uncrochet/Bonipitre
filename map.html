@@ -81,7 +81,7 @@
                 const locationId = snapshot.key;  // Use the unique key for this location
                   
                 // Store the marker data for future filtering
-                allMarkersData[locationId] = { lat, lng, speed };
+                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure };
                 
                // Add marker to the map
                 addMarker(lat, lng, locationId, speed, altitude, pressure);
@@ -113,7 +113,7 @@
                 const locationId = snapshot.key;
 
                 // Mettre à jour les données stockées
-                allMarkersData[locationId] = { lat, lng };
+                allMarkersData[locationId] = { lat, lng, speed };
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
@@ -245,7 +245,7 @@
                 const speed = allMarkersData[locationId].speed;
                 const altitude = allMarkersData[locationId].altitude;
                 const pressure = allMarkersData[locationId].pressure;
-                addMarker(lat, lng, locationId, speed);
+                addMarker(lat, lng, locationId, speed, altitude, pressure);
                 // Add the coordinates of the filtered marker to the markerCoordinates array
                 markerCoordinates.push([lat, lng]);
             }
