@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-    <h1>Live Location Markers from Bonipitre</h1>
+    <h1>Position en temps réel de la Bonipitre</h1>
 
 <!-- Filter Options -->
     <div class="filter-container">
@@ -75,6 +75,8 @@
                 const lat = locationData.latitude;
                 const lng = locationData.longitude;
                 const speed = locationData.speed;
+                const pressure = locationData.pressure;
+                const altitude = locationData.altitude;
                 const timestamp = locationData.timestamp;
                 const locationId = snapshot.key;  // Use the unique key for this location
                   
@@ -82,7 +84,7 @@
                 allMarkersData[locationId] = { lat, lng, speed };
                 
                // Add marker to the map
-                addMarker(lat, lng, locationId, speed);
+                addMarker(lat, lng, locationId, speed, altitude, pressure);
                 
                  // Add the coordinates of the marker to the array
                 markerCoordinates.push([lat, lng]);
@@ -106,6 +108,8 @@
                 const lat = locationData.latitude;
                 const lng = locationData.longitude;
                 const speed = locationData.speed;
+                const altitude = locationData.altitude;
+                const pressure = locationData.pressure;
                 const locationId = snapshot.key;
 
                 // Mettre à jour les données stockées
@@ -113,7 +117,7 @@
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
-                addMarker(lat, lng, locationId, speed);
+                addMarker(lat, lng, locationId, speed, altitude, pressure);
 
                  // Update the polyline after marker update
                 markerCoordinates.push([lat, lng]);  // Update the coordinates
@@ -142,7 +146,7 @@
         }
 
 // Function to add marker to the map with a sailing boat icon
-        function addMarker(lat, lng, locationId, speed) {
+        function addMarker(lat, lng, locationId, speed, altitude, pressure) {
             // Define the custom boat icon
             var boatIcon = L.icon({
                 iconUrl: 'https://bonipitre.fr/wp-content/uploads/2024/09/markerboat.png',  // URL to the custom icon
@@ -150,10 +154,12 @@
                 iconAnchor: [20, 40],  // Point of the icon which will correspond to the marker's location (bottom center)
                 popupAnchor: [0, -40]  // Point from which the popup should open relative to the iconAnchor
             });
+            let formattedAlt = altitude.toFixed(0);  // "123"
+            let formattedPress = pressure.toFixed(1);  // "123.5"
 
             // Create the marker using the custom boat icon
             var marker = L.marker([lat, lng], { icon: boatIcon }).addTo(map);
-            marker.bindPopup(`<strong>Date:</strong> ${locationId.split('_')[0]}<br><strong>Time:</strong> ${locationId.split('_')[1]}<br><strong>Vmoy:</strong> ${speed} km/h`);
+            marker.bindPopup(`<strong>Date:</strong> ${locationId.split('_')[0]}<br><strong>Heure:</strong> ${locationId.split('_')[1]}<br><strong>Vmoy:</strong> ${speed} km/h<br><strong>Altitude:</strong> ${formattedAlt} m<br><strong>Pmer:</strong> ${formattedPress} hPa`);
 
             // Show popup when mouse enters the marker
             marker.on('mouseover', function() {
@@ -211,7 +217,9 @@
                     const lat = allMarkersData[locationId].lat;
                     const lng = allMarkersData[locationId].lng;
                     const speed = allMarkersData[locationId].speed;
-                    addMarker(lat, lng, locationId, speed);  // Add marker to the map for the selected date
+                    const altitude = allMarkersData[locationId].altitude;
+                    const pressure = allMarkersData[locationId].pressure;
+                    addMarker(lat, lng, locationId, speed, altitude, pressure);  // Add marker to the map for the selected date
                     
                     // Add the coordinates of the filtered marker to the markerCoordinates array
                     markerCoordinates.push([lat, lng]);
@@ -235,7 +243,11 @@
                 const lat = allMarkersData[locationId].lat;
                 const lng = allMarkersData[locationId].lng;
                 const speed = allMarkersData[locationId].speed;
+                const altitude = allMarkersData[locationId].altitude;
+                const pressure = allMarkersData[locationId].pressure;
                 addMarker(lat, lng, locationId, speed);
+                // Add the coordinates of the filtered marker to the markerCoordinates array
+                markerCoordinates.push([lat, lng]);
             }
             // Update the polyline with the filtered coordinates
             drawPolyline();       
