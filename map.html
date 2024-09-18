@@ -249,7 +249,7 @@
                 const speed = allMarkersData[locationId].speed;
                 const altitude = allMarkersData[locationId].altitude;
                 const pressure = allMarkersData[locationId].pressure;
-                addMarker(lat, lng, locationId, speed);
+                addMarker(lat, lng, locationId, speed, altitude, pressure);
                 // Add the coordinates of the filtered marker to the markerCoordinates array
                 markerCoordinates.push([lat, lng]);
             }
