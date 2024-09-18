@@ -13,11 +13,15 @@
     </style>
 </head>
 <body>
-    <h1>Position en temps réel de la Bonipitre</h1>
+    <h1>Suivre la Bonipitre en temps réel</h1>
+    <p> <b>Disclaimer</b>: Si les positions ne sont plus à jour, ne paniquez pas, le bateau n'a pas coulé! :)
+    <br>Les positions sont envoyées via internet depuis le téléphone de David toutes les 30 minutes. 
+    Le téléphone peut tomber à l'eau, en panne, ne pas avoir accès à internet... 
+    <br>En cas de pépin, nous avons un téléphone Satellite Iridium pour contacter les secours.</p>
 
 <!-- Filter Options -->
     <div class="filter-container">
-        <label for="dateFilter">Select Date: </label>
+        <label for="dateFilter">Choisir une date: </label>
         <input type="date" id="dateFilter" />
         <button onclick="applyDateFilter()">Filtrer</button>
         <button onclick="clearDateFilter()">Supprimer le filtre</button>
@@ -34,13 +38,13 @@
     <script>
         // Your Firebase project configuration
         var firebaseConfig = {
-            apiKey: "AIzaSyBRCuwPYxvCDDPMZz2H4dRKGqAI2AAM5og",
-            authDomain: "YOUR_AUTH_DOMAIN",
+            apiKey: "",
+            authDomain: "",
             databaseURL: "https://bonipitre-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "bonipitre",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "1:30332491258:android:6c09befab6dbde3d2ac043"
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -55,7 +59,7 @@
 
         function initMap() {
 // Initialize the map
-            map = L.map('map').setView([43.6045, 1.444], 5);  // Default center on Toulouse  
+            map = L.map('map').setView([30, -30], 4);  // Default center on Atlantic  
                 // Esri Satellite layer
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri'
@@ -81,7 +85,7 @@
                 const locationId = snapshot.key;  // Use the unique key for this location
                   
                 // Store the marker data for future filtering
-                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure };
+                allMarkersData[locationId] = { lat, lng, speed };
                 
                // Add marker to the map
                 addMarker(lat, lng, locationId, speed, altitude, pressure);
@@ -113,7 +117,7 @@
                 const locationId = snapshot.key;
 
                 // Mettre à jour les données stockées
-                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure };
+                allMarkersData[locationId] = { lat, lng };
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
@@ -245,7 +249,7 @@
                 const speed = allMarkersData[locationId].speed;
                 const altitude = allMarkersData[locationId].altitude;
                 const pressure = allMarkersData[locationId].pressure;
-                addMarker(lat, lng, locationId, speed, altitude, pressure);
+                addMarker(lat, lng, locationId, speed);
                 // Add the coordinates of the filtered marker to the markerCoordinates array
                 markerCoordinates.push([lat, lng]);
             }
