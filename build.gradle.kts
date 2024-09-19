@@ -33,8 +33,9 @@ android {
 }
 
 dependencies {
+    implementation(libs.firebase.auth)
     implementation(libs.firebase.database)
-    implementation(libs.firebase.bom)
+    implementation(platform(libs.firebase.bom))
     implementation(libs.localbroadcastmanager)
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)

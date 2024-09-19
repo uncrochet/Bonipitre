@@ -40,6 +40,8 @@ import com.google.android.gms.location.Priority;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
@@ -257,41 +259,49 @@ public class LocationService extends Service {
     }
     // Function to send location data to Firebase
     private void sendInfoToFirebase(double latitude, double longitude, double altitude, float pressure) {
-        // Create a unique ID for the location update (e.g., using a timestamp)
-        currentTime = System.currentTimeMillis();
-        String currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-        String currentHour = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-        double speed = 0;
-        float[] results = new float[1];
-        // Calculate the distance in meters
-        Location.distanceBetween(lastLatitude, lastLongitude, latitude, longitude, results);
-        float distanceInMeters = results[0]; // Distance in meters
-        if( currentTime > lastTime) {
-            speed = Math.floor(3.6 * distanceInMeters * 1000 /(currentTime - lastTime) * 10) / 10.0;
+        // Ensure that user is authenticated before sending data
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            // Create a unique ID for the location update (e.g., using a timestamp)
+            currentTime = System.currentTimeMillis();
+            String currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+            String currentHour = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+            double speed = 0;
+            float[] results = new float[1];
+            // Calculate the distance in meters
+            Location.distanceBetween(lastLatitude, lastLongitude, latitude, longitude, results);
+            float distanceInMeters = results[0]; // Distance in meters
+            if( currentTime > lastTime) {
+                speed = Math.floor(3.6 * distanceInMeters * 1000 /(currentTime - lastTime) * 10) / 10.0;
+            }
+            String locationId = currentDate + "_" + currentHour ;
+
+            // Create a map to store the location data
+            LocationData locationData = new LocationData(latitude, longitude, altitude, currentTime, speed, pressure);
+
+            Log.d(TAG, "sendLocationToFirebase:"+locationId + ", pressure:"+pressure);
+
+            // Store the location data under a unique node in Firebase
+            database.child(locationId).setValue(locationData).addOnSuccessListener(aVoid -> {
+                // Successfully sent location
+                Log.d(TAG, "Location sent to Firebase successfully! "+currentHour);
+                sendStatusBroadcast("Firebase successful "+currentHour);
+            }).addOnFailureListener(e -> {
+                // Failed to send location
+                Log.e(TAG, "Failed to send location to Firebase! "+currentHour);
+                sendStatusBroadcast("Firebase failed "+currentHour);
+            });
+            lastTime = currentTime;
+            lastLatitude = latitude;
+            lastLongitude = longitude;
+            lastAltitude = altitude;
+            lastPressure = pressure;
+            lastHour = currentHour;
+        }else {
+            Log.e(TAG, "User is not authenticated, location not sent.");
+            sendStatusBroadcast("User is not authenticated in Firebase, location not sent.");
         }
-        String locationId = currentDate + "_" + currentHour ;
 
-        // Create a map to store the location data
-        LocationData locationData = new LocationData(latitude, longitude, altitude, currentTime, speed, pressure);
-
-        Log.d(TAG, "sendLocationToFirebase:"+locationId + ", pressure:"+pressure);
-
-        // Store the location data under a unique node in Firebase
-        database.child(locationId).setValue(locationData).addOnSuccessListener(aVoid -> {
-                    // Successfully sent location
-                    Log.d(TAG, "Location sent to Firebase successfully! "+currentHour);
-                    sendStatusBroadcast("Firebase successful "+currentHour);
-                }).addOnFailureListener(e -> {
-                    // Failed to send location
-                    Log.e(TAG, "Failed to send location to Firebase! "+currentHour);
-                    sendStatusBroadcast("Firebase failed "+currentHour);
-                });
-        lastTime = currentTime;
-        lastLatitude = latitude;
-        lastLongitude = longitude;
-        lastAltitude = altitude;
-        lastPressure = pressure;
-        lastHour = currentHour;
 
     }
 

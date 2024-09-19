@@ -14,6 +14,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +23,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.AuthResult;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -34,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView gpsAltitudeTextView;
     private TextView pressureTextView;
     private TextView sendStatusTextView;
+
+    private FirebaseAuth mAuth;
 
     private final BroadcastReceiver locationReceiver = new BroadcastReceiver() {
         @Override
@@ -69,6 +76,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 //        Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_main);
+
+        // Initialize Firebase Auth
+        mAuth = FirebaseAuth.getInstance();
+
+        // Authenticate with hardcoded credentials
+        loginWithHardcodedCredentials();
 
         gpsCoordinatesTextView = findViewById(R.id.gps_coordinates);
         gpsAltitudeTextView = findViewById(R.id.gps_altitude);
@@ -131,6 +144,29 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startLocationService();
         }
+    }
+
+    private void loginWithHardcodedCredentials() {
+        String email = "david.croenne@yahoo.fr";  // Use the credentials you set up
+        String password = "cr2032";
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            // Sign in success
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            Log.d("FirebaseAuth", "signInWithEmail:success");
+                            Toast.makeText(MainActivity.this, "Authentication Success.", Toast.LENGTH_SHORT).show();
+                            // Proceed with Firebase DB operations
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w("FirebaseAuth", "signInWithEmail:failure", task.getException());
+                            Toast.makeText(MainActivity.this, "Authentication Failed.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     private void moveAppToBackground() {
