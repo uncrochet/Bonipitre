@@ -1,0 +1,86 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/gps_coordinates"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:text="[Default]Position GPS : Non disponible"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/gps_altitude"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/gps_coordinates"
+        android:text="[Default]Altitude GPS : Non disponible"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/pressure"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/gps_altitude"
+        android:text="[Default]Pressure : Non disponible"
+        android:textSize="18sp" />
+  
+      <TextView
+        android:id="@+id/send_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="[Default]Statut de l'envoi : En attente"
+        android:textSize="18sp"
+        android:layout_below="@id/pressure"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"/>
+
+    <EditText
+        android:id="@+id/intervalInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Set interval (s)"
+        android:inputType="number" 
+        android:layout_below="@id/send_status"
+        android:layout_marginTop="40dp"
+        android:layout_centerHorizontal="true"/>
+
+    <Button
+        android:id="@+id/setIntervalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Set Interval" 
+        android:layout_below="@id/intervalInput"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"/>
+
+    <Button
+        android:id="@+id/hideAppButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hide App" 
+        android:layout_below="@id/setIntervalButton"
+        android:layout_marginTop="40dp"
+        android:layout_centerHorizontal="true"/>
+    
+    <Button
+        android:id="@+id/stopServiceButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:layout_below="@id/hideAppButton"
+        android:layout_centerHorizontal="true"
+        android:text="Stop Service and Exit"
+        android:textSize="18sp" />
+        
+</RelativeLayout>
+
+
