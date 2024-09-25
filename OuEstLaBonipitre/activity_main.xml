@@ -1,0 +1,54 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Date filter and buttons -->
+    <LinearLayout
+        android:id="@+id/dateFilterLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Date:" />
+
+        <EditText
+            android:id="@+id/dateFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="YYYY-MM-DD" />
+
+        <Button
+            android:id="@+id/applyFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Apply" />
+
+        <Button
+            android:id="@+id/clearFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear" />
+
+        <Button
+            android:id="@+id/zoomToLastMarker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Zoom" />
+
+    </LinearLayout>
+
+    <!-- Google Map View -->
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/dateFilterLayout" />
+</RelativeLayout>
+
