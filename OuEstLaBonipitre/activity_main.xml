@@ -11,22 +11,11 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Date:" />
-
-        <EditText
-            android:id="@+id/dateFilter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:hint="YYYY-MM-DD" />
-
         <Button
-            android:id="@+id/applyFilter"
+            android:id="@+id/btnFilterDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Apply" />
+            android:text="YYYY/MM/DD" />
 
         <Button
             android:id="@+id/clearFilter"

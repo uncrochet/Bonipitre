@@ -1,12 +1,13 @@
 package com.example.ouestlabonipitre;
 
+import android.app.DatePickerDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.DatePicker;
+import android.view.View;   // Import the View class
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +20,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.ChildEventListener;
@@ -30,17 +32,19 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private DatabaseReference mDatabase;
-    private Button applyFilterBtn, clearFilterBtn, zoomToLastMarkerBtn;
-    private EditText dateFilterInput;
+    private ArrayList<MarkerData> allMarkerData = new ArrayList<>();  // List to store all marker data
+    private Button btnFilterDate, applyFilterBtn, clearFilterBtn, zoomToLastMarkerBtn;
     private LatLng lastPosition;
     private Bitmap markerIcon;
     // ArrayList to store marker coordinates
     private ArrayList<LatLng> markerCoordinates = new ArrayList<>();
+    private Polyline polyline;  // Store the reference to the polyline
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,14 +84,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Log.e("MainActivity", "SupportMapFragment is null");
         }
         // Set up UI elements
-        applyFilterBtn = findViewById(R.id.applyFilter);
+        btnFilterDate = findViewById(R.id.btnFilterDate);
         clearFilterBtn = findViewById(R.id.clearFilter);
-        dateFilterInput = findViewById(R.id.dateFilter);
         zoomToLastMarkerBtn = findViewById(R.id.zoomToLastMarker);
 
         // Add listeners for buttons (filters)
-        applyFilterBtn.setOnClickListener(view -> applyDateFilter());
         clearFilterBtn.setOnClickListener(view -> clearDateFilter());
+        btnFilterDate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDatePickerDialog();
+            }
+        });
 
         // Inside onCreate
         zoomToLastMarkerBtn.setOnClickListener(view -> {
@@ -105,21 +113,66 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Set map to satellite view
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
         // Customize the map (add markers, polyline, etc.)
-        loadMarkersFromFirebase();
+        listenToFirebaseUpdates();
+
+        // Example of setting initial marker
+        LatLng initialPosition = new LatLng(48.8566, 2.3522);  // Example LatLng (Paris)
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(initialPosition, 5));
     }
 
-    private void loadMarkersFromFirebase() {
+    // Method to show DatePickerDialog
+    private void showDatePickerDialog() {
+        // Get the current date
+        final Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        // Create a new DatePickerDialog
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                // Get the selected date and apply the filter
+                String selectedDate = String.format("%04d/%02d/%02d", year, month + 1, dayOfMonth);
+                filterMarkersByDate(selectedDate);
+            }
+        }, year, month, day);
+
+        // Show the DatePickerDialog
+        datePickerDialog.show();
+    }
+
+    // Filter the markers based on the selected date
+    private void filterMarkersByDate(String selectedDate) {
+        mMap.clear();  // Clear the map before applying the filter
+        ArrayList<LatLng> filteredCoordinates = new ArrayList<>();
+
+        for (MarkerData markerData : allMarkerData) {
+            Log.d("filterMarkersByDate", markerData.getDate() +" choice: "+selectedDate);
+            if (markerData.getDate().equals(selectedDate)) {
+                LatLng newPosition = new LatLng(markerData.getLatitude(), markerData.getLongitude());
+                addMarker(newPosition, markerData.getDate(), markerData.getTime(), markerData.getSpeed(), markerData.getAltitude(), markerData.getPressure());
+                filteredCoordinates.add(newPosition);  // Store filtered coordinates
+            }
+        }
+        // Draw polyline for filtered markers
+        drawPolyline(filteredCoordinates);
+    }
+
+    private void listenToFirebaseUpdates() {
         // Firebase listener to load markers (similar to the child_added listener in your HTML code)
         mDatabase.addChildEventListener(new ChildEventListener() {
             @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                double lat = snapshot.child("latitude").getValue(Double.class);
-                double lng = snapshot.child("longitude").getValue(Double.class);
-                String locationId = snapshot.getKey();
-
-                lastPosition = new LatLng(lat, lng); // Save the last position
-                // Add marker on the map
-                addMarker(lat, lng, locationId);
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String previousChildName) {
+                MarkerData markerData = dataSnapshot.getValue(MarkerData.class);
+                if (markerData != null) {
+                    LatLng newPosition = new LatLng(markerData.getLatitude(), markerData.getLongitude());
+                    addMarker(newPosition, markerData.getDate(), markerData.getTime(), markerData.getSpeed(), markerData.getAltitude(), markerData.getPressure());
+                    markerCoordinates.add(newPosition);
+                    drawPolyline(markerCoordinates);  // Draw polyline for all markers
+                    allMarkerData.add(markerData);  // Store the data for future filtering
+                    lastPosition = newPosition; // Save the last position
+                }
             }
 
             @Override
@@ -145,81 +198,46 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void addMarker(double lat, double lng, String locationId) {
-        LatLng position = new LatLng(lat, lng);
+    private void addMarker(LatLng latLng, String date, String time, double speed, double altitude, double pressure) {
         // Check if the marker icon is already loaded
+        String snippetDetails = String.format("Speed: %.1f km/h\nAltitude: %.0f m\nPressure: %.1f hPa", speed, altitude, pressure);
         if (markerIcon != null) {
             // Use the cached marker icon for the marker
             mMap.addMarker(new MarkerOptions()
-                    .position(position)
-                    .title("Location: " + locationId)
+                    .position(latLng)
+                    .title(date + " "+ time)
+                    .snippet(snippetDetails)
                     .icon(BitmapDescriptorFactory.fromBitmap(markerIcon))
             );
         } else {
             // If the icon is not yet loaded, add the marker without an icon
-            mMap.addMarker(new MarkerOptions().position(position).title("Location: " + locationId));
+            mMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title(date + " "+ time)
+                    .snippet(snippetDetails)
+            );
         }
-        // Store marker coordinates
-        markerCoordinates.add(position);
-
-        // Draw the polyline
-        PolylineOptions polylineOptions = new PolylineOptions()
-                .addAll(markerCoordinates)
-                .color(Color.WHITE)
-                .width(5);
-        mMap.addPolyline(polylineOptions);
     }
 
-//    private void addMarker(double lat, double lng, String locationId) {
-        // Add markers to Google Map, similar to your HTML's addMarker function
-//        LatLng position = new LatLng(lat, lng);
-//        mMap.addMarker(new MarkerOptions().position(position).title("Location: " + locationId));
-//    }
-
-    private void applyDateFilter() {
-        String selectedDate = dateFilterInput.getText().toString();
-
-        // Remove all current markers
-        mMap.clear();
-
-        // Add only the markers that match the selected date
-        mDatabase.addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                String locationId = snapshot.getKey();
-                String markerDate = locationId.split("_")[0];  // Extract date from locationId
-
-                if (markerDate.equals(selectedDate)) {
-                    double lat = snapshot.child("latitude").getValue(Double.class);
-                    double lng = snapshot.child("longitude").getValue(Double.class);
-                    addMarker(lat, lng, locationId);
-                }
-            }
-
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                // Handle changes in the marker data (optional)
-            }
-
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                // Handle removal of markers (optional)
-            }
-
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                // Handle marker moves (optional)
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                // Handle errors
-                Log.e("DateFilter", "Filter error: " + error.getMessage());
-            }
-        });
+    private void drawPolyline(ArrayList<LatLng> coordinates) {
+        if (polyline != null) {
+            polyline.remove();  // Remove the old polyline before drawing a new one
+        }
+        if (!coordinates.isEmpty()) {
+            PolylineOptions polylineOptions = new PolylineOptions().addAll(coordinates).color(0xFFFFFFFF).width(5);
+            polyline = mMap.addPolyline(polylineOptions);
+        }
     }
 
     private void clearDateFilter() {
-        // Clear the filter and show all markers again
+        mMap.clear();
+        markerCoordinates.clear();
+        for (MarkerData markerData : allMarkerData) {
+            LatLng latLng = new LatLng(markerData.getLatitude(), markerData.getLongitude());
+            addMarker(latLng, markerData.getDate(), markerData.getTime(), markerData.getSpeed(), markerData.getAltitude(), markerData.getPressure());
+            markerCoordinates.add(latLng);
+        }
+        drawPolyline(markerCoordinates);  // Draw polyline for all markers again
     }
+
 }
