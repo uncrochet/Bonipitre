@@ -14,10 +14,10 @@
 </head>
 <body>
     <h1>Suivre la Bonipitre en temps réel</h1>
-    <p> <b>Disclaimer</b>: Si les positions ne sont plus à jour, ne paniquez pas, le bateau n'a pas coulé! :)
+    <p><i> <b>Disclaimer</b>: Si les positions ne sont plus à jour, ne paniquez pas, le bateau n'a pas coulé! :)
     <br>Les positions sont envoyées via internet depuis le téléphone de David toutes les 30 minutes. 
     Le téléphone peut tomber à l'eau, en panne, ne pas avoir accès à internet... 
-    <br>En cas de pépin, nous avons un téléphone Satellite Iridium pour contacter les secours.</p>
+    <br>En cas de pépin, nous avons un téléphone Satellite Iridium pour contacter les secours.</i></p>
 
 <!-- Filter Options -->
     <div class="filter-container">
@@ -28,6 +28,8 @@
         <button onclick="goToMostRecentMarker()">Voir la position la plus récente</button>
     </div>
     <br>
+    <div id="distanceTraveled">Distance parcourue les dernières 24h: <span id="totalDistanceKM">0</span> km <span id="totalDistanceMiles">0</span> miles</div>
+	<br>
     <div id="map"></div>
 
     <!-- Firebase SDK -->
@@ -85,13 +87,20 @@
                 const locationId = snapshot.key;  // Use the unique key for this location
                   
                 // Store the marker data for future filtering
-                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure };
+                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure, timestamp };
                 
                // Add marker to the map
                 addMarker(lat, lng, locationId, speed, altitude, pressure);
                 
                  // Add the coordinates of the marker to the array
                 markerCoordinates.push([lat, lng]);
+
+				 // Check if the timestamp is within the last 24 hours
+				const now = Date.now();
+				const oneDayAgo = now - 24 * 60 * 60 * 1000; // Timestamp for 24 hours ago
+				if (timestamp >= oneDayAgo) {
+					calculateDistanceLast24Hours(); // Recalculate distance
+				}
 
                 // Draw or update the polyline connecting the markers
                 drawPolyline();
@@ -115,9 +124,9 @@
                 const altitude = locationData.altitude;
                 const pressure = locationData.pressure;
                 const locationId = snapshot.key;
-
+				
                 // Mettre à jour les données stockées
-                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure };
+                allMarkersData[locationId] = { lat, lng, speed, altitude, pressure, timestamp };
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
@@ -149,7 +158,49 @@
             });
         }
 
-// Function to add marker to the map with a sailing boat icon
+
+		// Function to calculate the distance between two lat/lng points using the Haversine formula
+		function calculateDistance(lat1, lng1, lat2, lng2) {
+			const R = 6371; // Radius of the Earth in kilometers
+			const dLat = (lat2 - lat1) * Math.PI / 180;
+			const dLng = (lng2 - lng1) * Math.PI / 180;
+			const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+			const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+			return R * c; // Distance in kilometers
+		}
+
+		// Function to calculate the total distance covered in the last 24 hours
+		function calculateDistanceLast24Hours() {
+			let totalDistance = 0;
+			const now = Date.now();
+			const oneDayAgo = now - 24 * 60 * 60 * 1000; // Timestamp for 24 hours ago
+
+	
+			// Filter marker coordinates to include only those in the last 24 hours
+			let last24HoursCoordinates = [];
+			for (let locationId in allMarkersData) {
+				const timestamp = parseInt(allMarkersData[locationId].timestamp); // Parse locationId as timestamp
+				if (timestamp >= oneDayAgo) {
+					const latLng = [allMarkersData[locationId].lat, allMarkersData[locationId].lng];
+					last24HoursCoordinates.push(latLng);
+				}
+			}
+
+			// Sum up distances between consecutive points
+			for (let i = 1; i < last24HoursCoordinates.length; i++) {
+				const [lat1, lng1] = last24HoursCoordinates[i - 1];
+				const [lat2, lng2] = last24HoursCoordinates[i];
+				totalDistance += calculateDistance(lat1, lng1, lat2, lng2);
+			}
+
+			// Display the total distance on the page
+			document.getElementById('totalDistanceKM').innerText = totalDistance.toFixed(1);
+			document.getElementById('totalDistanceMiles').innerText = (totalDistance*0.539957).toFixed(1);
+		}
+		
+		// Function to add marker to the map with a sailing boat icon
         function addMarker(lat, lng, locationId, speed, altitude, pressure) {
             // Define the custom boat icon
             var boatIcon = L.icon({
@@ -279,8 +330,11 @@
                 //alert('No markers found.');
             }
         }
-        window.onload = initMap;
-
+		// Call the function when the window loads
+		window.onload = function() {
+			initMap();
+		};
+		
   </script>
 
 </body>
