@@ -15,13 +15,13 @@
             android:id="@+id/btnFilterDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="YYYY/MM/DD" />
+            android:text="Date" />
 
         <Button
             android:id="@+id/clearFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Clear" />
+            android:text="Reset" />
 
         <Button
             android:id="@+id/zoomToLastMarker"
@@ -29,6 +29,12 @@
             android:layout_height="wrap_content"
             android:text="Zoom" />
 
+       <Button
+            android:id="@+id/btnCloseApp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fermer" />
+        
     </LinearLayout>
 
     <!-- Google Map View -->

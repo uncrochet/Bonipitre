@@ -1,4 +1,4 @@
-package com.example.ouestlabonipitre;
+package com.bonipitre.ouestlabonipitre;
 
 import android.app.DatePickerDialog;
 import android.graphics.Bitmap;
@@ -11,6 +11,8 @@ import android.view.View;   // Import the View class
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -39,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap mMap;
     private DatabaseReference mDatabase;
     private ArrayList<MarkerData> allMarkerData = new ArrayList<>();  // List to store all marker data
-    private Button btnFilterDate, applyFilterBtn, clearFilterBtn, zoomToLastMarkerBtn;
+    private Button btnFilterDate, clearFilterBtn, zoomToLastMarkerBtn, btnCloseApp;
     private LatLng lastPosition;
     private Bitmap markerIcon;
     // ArrayList to store marker coordinates
@@ -87,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         btnFilterDate = findViewById(R.id.btnFilterDate);
         clearFilterBtn = findViewById(R.id.clearFilter);
         zoomToLastMarkerBtn = findViewById(R.id.zoomToLastMarker);
+        btnCloseApp = findViewById(R.id.btnCloseApp);
 
         // Add listeners for buttons (filters)
         clearFilterBtn.setOnClickListener(view -> clearDateFilter());
@@ -103,6 +106,37 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(lastPosition, 15));
             }
         });
+
+        // Set up an onClick listener for the Close App button
+        btnCloseApp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showExitConfirmationDialog();  // Show confirmation dialog before exiting
+            }
+        });
+    }
+
+    // Show a confirmation dialog before closing the application
+    private void showExitConfirmationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Etes vous sûr de vouloir quitter l'application?");
+        builder.setCancelable(true);
+
+        builder.setPositiveButton("Oui", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                finish();  // Close the current activity
+                System.exit(0);  // Exit the application
+            }
+        });
+
+        builder.setNegativeButton("Non", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.cancel();  // Cancel the dialog
+            }
+        });
+
+        AlertDialog alert = builder.create();
+        alert.show();
     }
 
     @Override
@@ -134,6 +168,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
                 // Get the selected date and apply the filter
                 String selectedDate = String.format("%04d/%02d/%02d", year, month + 1, dayOfMonth);
+                // Set the button text to the selected date
+                btnFilterDate.setText(selectedDate);
                 filterMarkersByDate(selectedDate);
             }
         }, year, month, day);
@@ -148,7 +184,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         ArrayList<LatLng> filteredCoordinates = new ArrayList<>();
 
         for (MarkerData markerData : allMarkerData) {
-            Log.d("filterMarkersByDate", markerData.getDate() +" choice: "+selectedDate);
+//            Log.d("filterMarkersByDate", markerData.getDate() +" choice: "+selectedDate);
             if (markerData.getDate().equals(selectedDate)) {
                 LatLng newPosition = new LatLng(markerData.getLatitude(), markerData.getLongitude());
                 addMarker(newPosition, markerData.getDate(), markerData.getTime(), markerData.getSpeed(), markerData.getAltitude(), markerData.getPressure());
@@ -200,7 +236,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void addMarker(LatLng latLng, String date, String time, double speed, double altitude, double pressure) {
         // Check if the marker icon is already loaded
-        String snippetDetails = String.format("Speed: %.1f km/h\nAltitude: %.0f m\nPressure: %.1f hPa", speed, altitude, pressure);
+        String snippetDetails = String.format("Vmoy: %.1f km/h | Alt: %.0f m | Pmer: %.1f hPa", speed, altitude, pressure);
         if (markerIcon != null) {
             // Use the cached marker icon for the marker
             mMap.addMarker(new MarkerOptions()
@@ -230,6 +266,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void clearDateFilter() {
+        // Reset the button text to the default value
+        btnFilterDate.setText("Date");
+
         mMap.clear();
         markerCoordinates.clear();
         for (MarkerData markerData : allMarkerData) {
