@@ -29,6 +29,7 @@
     </div>
     <br>
     <div id="distanceTraveled">Distance parcourue les dernières 24h: <span id="totalDistanceKM">0</span> km <span id="totalDistanceMiles">0</span> miles</div>
+    <div id="lastPosition">Date du dernier envoi de position: <span id="lastPositionData">0</span> </div>
 	<br>
     <div id="map"></div>
 
@@ -198,6 +199,9 @@
 			// Display the total distance on the page
 			document.getElementById('totalDistanceKM').innerText = totalDistance.toFixed(1);
 			document.getElementById('totalDistanceMiles').innerText = (totalDistance*0.539957).toFixed(1);
+			var date = new Date(mostRecentMarker.timestamp);
+			document.getElementById('lastPositionData').innerText = date.toLocaleString();
+			
 		}
 		
 		// Function to add marker to the map with a sailing boat icon
@@ -211,10 +215,11 @@
             });
             let formattedAlt = altitude.toFixed(0);  // "123"
             let formattedPress = pressure.toFixed(1);  // "123.5"
+			let speedInKnots = (speed *0.539957).toFixed(1);
 
             // Create the marker using the custom boat icon
             var marker = L.marker([lat, lng], { icon: boatIcon }).addTo(map);
-            marker.bindPopup(`<strong>Date:</strong> ${locationId.split('_')[0]}<br><strong>Heure:</strong> ${locationId.split('_')[1]}<br><strong>Vmoy:</strong> ${speed} km/h<br><strong>Altitude:</strong> ${formattedAlt} m<br><strong>Pmer:</strong> ${formattedPress} hPa`);
+            marker.bindPopup(`<strong>Date:</strong> ${locationId.split('_')[0]}<br><strong>Heure:</strong> ${locationId.split('_')[1]}<br><strong>Vmoy:</strong> ${speed} km/h - ${speedInKnots} nds<br><strong>Altitude:</strong> ${formattedAlt} m<br><strong>Pmer:</strong> ${formattedPress} hPa<br><strong>Lat:</strong> ${lat}<br><strong>Lng:</strong> ${lng}`);
 
             // Show popup when mouse enters the marker
             marker.on('mouseover', function() {
