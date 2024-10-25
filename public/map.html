@@ -26,6 +26,7 @@
         <button onclick="applyDateFilter()">Filtrer</button>
         <button onclick="clearDateFilter()">Supprimer le filtre</button>
         <button onclick="goToMostRecentMarker()">Voir la position la plus récente</button>
+		<button id="toggleAllMarkers">Icones</button>
     </div>
     <br>
     <div id="distanceTraveled">Distance parcourue les dernières 24h: <span id="totalDistanceKM">0</span> km <span id="totalDistanceMiles">0</span> miles</div>
@@ -59,6 +60,7 @@
         let polyline = null;  // Variable to store the polyline object
         let allMarkersData = {};  // Store all marker data for filtering
         let mostRecentMarker = null;  // Track the most recent marker
+		let areMarkersVisible = true; // Flag to track marker visibility
 
         function initMap() {
 // Initialize the map
@@ -70,8 +72,19 @@
 
            // Load existing markers and listen for new ones
             loadMarkersFromFirebase();            
+
+			// Add event listener to the toggle button
+			document.getElementById('toggleAllMarkers').addEventListener('click', toggleMarkersVisibility);
         }
 
+		function toggleMarkersVisibility() {
+			areMarkersVisible = !areMarkersVisible;
+
+			for (let locationId in markers) {
+				markers[locationId].getElement().style.display = areMarkersVisible ? 'block' : 'none';
+			}
+		}
+		
         // Load all markers from Firebase, sorted by locationId (date prefix), and add new markers dynamically
         function loadMarkersFromFirebase() {
             const database = firebase.database().ref("locations");
