@@ -29,7 +29,8 @@
 		<button id="toggleAllMarkers">Icones</button>
     </div>
     <br>
-    <div id="distanceTraveled">Distance parcourue les dernières 24h: <span id="totalDistanceKM">0</span> km <span id="totalDistanceMiles">0</span> miles</div>
+    <div id="distanceTotalTraveled">Distance totale parcourue: <span id="distanceKMtotal">0</span> km <span id="distanceMilestotal">0</span> milles</div>
+    <div id="distance24Traveled">Distance parcourue les dernières 24h: <span id="distanceKM24h">0</span> km <span id="distanceMiles24h">0</span> milles</div>
     <div id="lastPosition">Date du dernier envoi de position: <span id="lastPositionData">0</span> </div>
 	<br>
     <div id="map"></div>
@@ -60,7 +61,7 @@
         let polyline = null;  // Variable to store the polyline object
         let allMarkersData = {};  // Store all marker data for filtering
         let mostRecentMarker = null;  // Track the most recent marker
-		let areMarkersVisible = true; // Flag to track marker visibility
+		let areMarkersVisible = false; // Flag to track marker visibility
 
         function initMap() {
 // Initialize the map
@@ -75,6 +76,7 @@
 
 			// Add event listener to the toggle button
 			document.getElementById('toggleAllMarkers').addEventListener('click', toggleMarkersVisibility);
+
         }
 
 		function toggleMarkersVisibility() {
@@ -112,10 +114,13 @@
 				 // Check if the timestamp is within the last 24 hours
 				const now = Date.now();
 				const oneDayAgo = now - 24 * 60 * 60 * 1000; // Timestamp for 24 hours ago
+				// Display the total distance on the page
 				if (timestamp >= oneDayAgo) {
-					calculateDistanceLast24Hours(); // Recalculate distance
+					const totalDistance = calculateDistanceLastHours(24); // Recalculate distance
+					document.getElementById('distanceKM24h').innerText = totalDistance.toFixed(1);
+					document.getElementById('distanceMiles24h').innerText = (totalDistance*0.539957).toFixed(1);
 				}
-
+			
                 // Draw or update the polyline connecting the markers
                 drawPolyline();
                 
@@ -127,6 +132,9 @@
                 if (selectedDate) {
                     applyDateFilter();  // Appliquer le filtre
                 }
+				const totalDistance = calculateDistanceLastHours(2400); // Recalculate distance
+				document.getElementById('distanceKMtotal').innerText = totalDistance.toFixed(1);
+				document.getElementById('distanceMilestotal').innerText = (totalDistance*0.539957).toFixed(1);
             });
 
             // Listen for updates to existing locations
@@ -170,6 +178,8 @@
                 markerCoordinates = markerCoordinates.filter(coords => coords !== [markers[locationId].getLatLng().lat, markers[locationId].getLatLng().lng]);
                 drawPolyline();
             });
+			
+
         }
 
 
@@ -186,12 +196,11 @@
 		}
 
 		// Function to calculate the total distance covered in the last 24 hours
-		function calculateDistanceLast24Hours() {
+		function calculateDistanceLastHours(hours) {
 			let totalDistance = 0;
 			const now = Date.now();
-			const oneDayAgo = now - 24 * 60 * 60 * 1000; // Timestamp for 24 hours ago
+			const oneDayAgo = now - hours * 60 * 60 * 1000; // Timestamp for 24 hours ago
 
-	
 			// Filter marker coordinates to include only those in the last 24 hours
 			let last24HoursCoordinates = [];
 			for (let locationId in allMarkersData) {
@@ -208,13 +217,7 @@
 				const [lat2, lng2] = last24HoursCoordinates[i];
 				totalDistance += calculateDistance(lat1, lng1, lat2, lng2);
 			}
-
-			// Display the total distance on the page
-			document.getElementById('totalDistanceKM').innerText = totalDistance.toFixed(1);
-			document.getElementById('totalDistanceMiles').innerText = (totalDistance*0.539957).toFixed(1);
-			var date = new Date(mostRecentMarker.timestamp);
-			document.getElementById('lastPositionData').innerText = date.toLocaleString();
-			
+			return totalDistance;
 		}
 		
 		// Function to add marker to the map with a sailing boat icon
@@ -246,6 +249,9 @@
     
             // Store the marker in the markers dictionary
             markers[locationId] = marker;
+
+			// Set the initial visibility
+			marker.getElement().style.display = areMarkersVisible ? 'block' : 'none';
         }
 
 
@@ -337,6 +343,8 @@
                     mostRecentMarker = { lat, lng, timestamp };  // Update the most recent marker
                 }
             }
+			var date = new Date(mostRecentMarker.timestamp);
+			document.getElementById('lastPositionData').innerText = date.toLocaleString();
         }
 
         // Function to go to the most recent marker
