@@ -104,15 +104,16 @@
                   
                 // Store the marker data for future filtering
                 allMarkersData[locationId] = { lat, lng, speed, altitude, pressure, timestamp };
+
+				const now = Date.now();
                 
-               // Add marker to the map
-                addMarker(lat, lng, locationId, speed, altitude, pressure);
+               // Add marker to the map, display only 3 last hours markers
+                addMarker(lat, lng, locationId, speed, altitude, pressure, (timestamp > (now - 3 * 60 * 60 * 1000)) ); 
                 
                  // Add the coordinates of the marker to the array
                 markerCoordinates.push([lat, lng]);
 
 				 // Check if the timestamp is within the last 24 hours
-				const now = Date.now();
 				const oneDayAgo = now - 24 * 60 * 60 * 1000; // Timestamp for 24 hours ago
 				// Display the total distance on the page
 				if (timestamp >= oneDayAgo) {
@@ -152,7 +153,7 @@
 
                 // Supprimer l'ancien marqueur et ajouter le nouveau
                 removeMarker(locationId);
-                addMarker(lat, lng, locationId, speed, altitude, pressure);
+                addMarker(lat, lng, locationId, speed, altitude, pressure, areMarkersVisible);
 
                  // Update the polyline after marker update
                 markerCoordinates.push([lat, lng]);  // Update the coordinates
@@ -221,7 +222,7 @@
 		}
 		
 		// Function to add marker to the map with a sailing boat icon
-        function addMarker(lat, lng, locationId, speed, altitude, pressure) {
+        function addMarker(lat, lng, locationId, speed, altitude, pressure, display) {
             // Define the custom boat icon
             var boatIcon = L.icon({
                 iconUrl: 'https://bonipitre.fr/wp-content/uploads/2024/09/markerboat-1.png',  // URL to the custom icon
@@ -251,7 +252,7 @@
             markers[locationId] = marker;
 
 			// Set the initial visibility
-			marker.getElement().style.display = areMarkersVisible ? 'block' : 'none';
+			marker.getElement().style.display = display ? 'block' : 'none';
         }
 
 
@@ -298,7 +299,7 @@
                     const speed = allMarkersData[locationId].speed;
                     const altitude = allMarkersData[locationId].altitude;
                     const pressure = allMarkersData[locationId].pressure;
-                    addMarker(lat, lng, locationId, speed, altitude, pressure);  // Add marker to the map for the selected date
+                    addMarker(lat, lng, locationId, speed, altitude, pressure, areMarkersVisible);  // Add marker to the map for the selected date
                     
                     // Add the coordinates of the filtered marker to the markerCoordinates array
                     markerCoordinates.push([lat, lng]);
@@ -324,7 +325,7 @@
                 const speed = allMarkersData[locationId].speed;
                 const altitude = allMarkersData[locationId].altitude;
                 const pressure = allMarkersData[locationId].pressure;
-                addMarker(lat, lng, locationId, speed, altitude, pressure);
+                addMarker(lat, lng, locationId, speed, altitude, pressure, areMarkersVisible);
                 // Add the coordinates of the filtered marker to the markerCoordinates array
                 markerCoordinates.push([lat, lng]);
             }
